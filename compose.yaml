@@ -1,0 +1,43 @@
+name: salesflow
+
+services:
+  backend:
+    build:
+      context: ./infra/docker
+      dockerfile: php.Dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./apps/backend:/var/www/html
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: database
+      DB_PORT: "5432"
+      DB_DATABASE: salesflow
+      DB_USERNAME: salesflow
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+    depends_on:
+      database:
+        condition: service_healthy
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+    init: true
+
+  database:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_DB: salesflow
+      POSTGRES_USER: salesflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salesflow -d salesflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:
