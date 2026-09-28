@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -191,5 +192,33 @@ class ProductStoreTest extends TestCase
             'zero' => ['0.00'],
             'maximum' => ['9999999999.99'],
         ];
+    }
+
+    public function test_it_handles_a_sku_conflict_during_insertion(): void
+    {
+        $admin = $this->userWithRole(UserRole::Admin);
+        $payload = $this->validPayload();
+
+        Product::creating(function (Product $product): void {
+            DB::table('products')->insert([
+                'sku' => $product->sku,
+                'name' => 'Producto que provoca el conflicto',
+                'price' => '10.00',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        $this->actingAs($admin, 'web')
+            ->postJson('/api/v1/products', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['sku'])
+            ->assertJsonPath(
+                'errors.sku.0',
+                'El SKU ya está registrado.'
+            );
+
+        $this->assertDatabaseCount('products', 0);
     }
 }
