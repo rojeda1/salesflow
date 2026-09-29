@@ -14,4 +14,12 @@ class InventoryMovementPolicy
             UserRole::Supervisor,
         ], true);
     }
+
+    public function viewAny(User $user): bool
+    {
+        return in_array($user->role, [
+            UserRole::Admin,
+            UserRole::Supervisor,
+        ], true);
+    }
 }
