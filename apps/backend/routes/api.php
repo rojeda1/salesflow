@@ -21,6 +21,14 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('auth:sanctum')
         ->name('api.v1.inventory-movements.store');
 
+    Route::get(
+        '/products/{product}/inventory-movements',
+        [InventoryMovementController::class, 'index']
+    )
+        ->whereNumber('product')
+        ->middleware('auth:sanctum')
+        ->name('api.v1.inventory-movements.index');
+
     Route::get('/auth/me', [SessionController::class, 'show'])
         ->middleware('auth:sanctum')
         ->name('auth.me');
